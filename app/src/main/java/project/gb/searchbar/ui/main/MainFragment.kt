@@ -9,6 +9,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.animation.AccelerateDecelerateInterpolator
+import android.widget.Toast
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.constraintlayout.widget.ConstraintSet
 import androidx.core.content.ContextCompat
@@ -17,14 +18,17 @@ import androidx.lifecycle.lifecycleScope
 import com.google.android.material.textfield.TextInputLayout
 import project.gb.searchbar.R
 import project.gb.searchbar.databinding.FragmentMainBinding
+import kotlinx.coroutines.*
 
 class MainFragment : Fragment() {
+    // region init
     private var _binding : FragmentMainBinding? = null
     private val binding get() = _binding!!
-
     private lateinit var constraintLayout: ConstraintLayout
     private lateinit var constraintSetStart: ConstraintSet
     private lateinit var constraintSetEnd: ConstraintSet
+    private var job: Job? = null
+    // endregion
 
     companion object {
         fun newInstance() = MainFragment()
@@ -41,11 +45,12 @@ class MainFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         constraintLayout = binding.mainConstraintLayout
 
-        // Инициализируем ConstraintSets
+        // region Инициализируем ConstraintSets
         constraintSetStart = ConstraintSet()
         constraintSetStart.clone(constraintLayout)
         constraintSetEnd = ConstraintSet()
         constraintSetEnd.clone(requireContext(), R.layout.fragment_main_expanded)
+        // endregion
 
         binding.textInputEditText.setOnFocusChangeListener { _, hasFocus ->
             if (hasFocus) {
@@ -66,7 +71,6 @@ class MainFragment : Fragment() {
     private fun observedForChangeTextSearch() {
         lifecycleScope.launchWhenStarted {
             viewModel.searchText.collect { searchText ->
-                // Обновляем состояние кнопки поиска на основе длины текста
                 updateSearchButtonState(searchText)
             }
         }
@@ -83,22 +87,44 @@ class MainFragment : Fragment() {
     }
 
     /**
-     * Добавляет иконку поиска к TextInputLayout.
+     * Метод добавляет иконку поиска к TextInputLayout.
      * Иконка поиска будет располагаться в конце поля ввода.
      * И проверяем какое кол-во символов введено.
      */
     private fun updateSearchButtonState(searchText: String) {
-        // Проверяем, что длина текста поиска больше или равна 3 символам
         val isSearchTextValid = searchText.length >= 3
-
-        // Получаем ссылку на ресурс иконки поиска
         val searchIcon = ContextCompat.getDrawable(requireContext(), R.drawable.searched_icon)
 
-        // Устанавливаем иконку поиска в качестве конечной иконки, если длина текста поиска достаточна
+        // Устанавливаем иконку
         binding.textInputLayout.endIconMode =
             if (isSearchTextValid) TextInputLayout
                 .END_ICON_CUSTOM else TextInputLayout.END_ICON_NONE
         binding.textInputLayout.endIconDrawable = searchIcon
+
+        // Создаем слушатель нажатия на кнопку поиска
+        val searchButtonListener = View.OnClickListener {
+            // viewModel.performSearch()
+            animationProgressBar()
+            Toast.makeText(requireContext(), "Слушатель работает!", Toast.LENGTH_SHORT).show()
+
+        }
+
+        // Устанавливаем созданный слушатель для endIconView
+        binding.textInputLayout.setEndIconOnClickListener(searchButtonListener)
+    }
+
+    /**
+     * Метод добавляет простую анимацию прогресс бару
+     */
+    private fun animationProgressBar() {
+        job?.cancel()
+        job = CoroutineScope(Dispatchers.Main).launch {
+            for (i in 0..100) {
+                binding.progressBar.progress = i
+                delay(20)
+            }
+            binding.progressBar.progress = 0
+        }
     }
 
     /**
@@ -124,7 +150,9 @@ class MainFragment : Fragment() {
         binding.textInputEditText.clearFocus() // Сброс фокуса, чтобы клавиатура скрылась
     }
 
-    // Обработчик нажатия на пустую область экрана
+    /**
+     * Обработчик нажатия на пустую область экрана
+     */
     private fun onEmptyAreaClicked() {
         collapseEditText()
     }
