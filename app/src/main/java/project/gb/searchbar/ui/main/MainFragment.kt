@@ -101,16 +101,17 @@ class MainFragment : Fragment() {
                 .END_ICON_CUSTOM else TextInputLayout.END_ICON_NONE
         binding.textInputLayout.endIconDrawable = searchIcon
 
-        // Создаем слушатель нажатия на кнопку поиска
-        val searchButtonListener = View.OnClickListener {
-            // viewModel.performSearch()
+        listenerButtonsSend()
+    }
+
+    /**
+     * Слушатель кнопки поиска
+     */
+    private fun listenerButtonsSend() {
+        binding.textInputLayout.setEndIconOnClickListener {
             animationProgressBar()
             Toast.makeText(requireContext(), "Слушатель работает!", Toast.LENGTH_SHORT).show()
-
         }
-
-        // Устанавливаем созданный слушатель для endIconView
-        binding.textInputLayout.setEndIconOnClickListener(searchButtonListener)
     }
 
     /**
