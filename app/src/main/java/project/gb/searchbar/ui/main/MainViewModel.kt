@@ -1,20 +1,32 @@
 package project.gb.searchbar.ui.main
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
-class MainViewModel : ViewModel() {
+class MainViewModel(
+    private val repository: MainRepository
+) : ViewModel() {
+    private val _state = MutableStateFlow<State>(State.Success)
+
     // MutableStateFlow для отслеживания текста поиска
     private val _searchText = MutableStateFlow("")
     val searchText: StateFlow<String> = _searchText
 
-    /**
-     * Метод для обновления текста поиска
-     */
+    private val _searchString2 = MutableStateFlow("")
+    val searchString2 = _searchString2.asStateFlow()
+
     fun updateSearchText(text: String) {
-        _searchText.value = text
+
+//        _searchText.value = text
+
+        viewModelScope.launch {
+            _state.value = State.Loading
+            _searchText.value = repository.getData(text)
+            _state.value = State.Success
+        }
     }
-
-
 }

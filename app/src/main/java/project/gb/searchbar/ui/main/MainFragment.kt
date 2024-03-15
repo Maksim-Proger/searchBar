@@ -34,7 +34,7 @@ class MainFragment : Fragment() {
         fun newInstance() = MainFragment()
     }
 
-    private val viewModel: MainViewModel by viewModels()
+    private val viewModel: MainViewModel by viewModels { MainViewModelFactory() }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentMainBinding.inflate(inflater)
@@ -72,6 +72,7 @@ class MainFragment : Fragment() {
         lifecycleScope.launchWhenStarted {
             viewModel.searchText.collect { searchText ->
                 updateSearchButtonState(searchText)
+                test = searchText
             }
         }
     }
@@ -107,10 +108,14 @@ class MainFragment : Fragment() {
     /**
      * Слушатель кнопки поиска
      */
+    private var test = ""
     private fun listenerButtonsSend() {
         binding.textInputLayout.setEndIconOnClickListener {
             animationProgressBar()
-            Toast.makeText(requireContext(), "Слушатель работает!", Toast.LENGTH_SHORT).show()
+            CoroutineScope(Dispatchers.Main).launch {
+                delay(2000)
+                binding.resultTextView.text = test
+            }
         }
     }
 
