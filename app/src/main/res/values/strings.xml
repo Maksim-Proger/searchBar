@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Search Bar</string>
+    <string name="search_query">Enter a request</string>
+</resources>
