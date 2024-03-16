@@ -9,7 +9,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.animation.AccelerateDecelerateInterpolator
-import android.widget.Toast
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.constraintlayout.widget.ConstraintSet
 import androidx.core.content.ContextCompat
@@ -20,13 +19,16 @@ import project.gb.searchbar.R
 import project.gb.searchbar.databinding.FragmentMainBinding
 import kotlinx.coroutines.*
 
+
 class MainFragment : Fragment() {
     // region init
     private var _binding : FragmentMainBinding? = null
     private val binding get() = _binding!!
+
     private lateinit var constraintLayout: ConstraintLayout
     private lateinit var constraintSetStart: ConstraintSet
     private lateinit var constraintSetEnd: ConstraintSet
+
     private var job: Job? = null
     // endregion
 
@@ -61,8 +63,15 @@ class MainFragment : Fragment() {
             onEmptyAreaClicked()
         }
 
-        observedForChangeTextSearch()
+        // Подписываемся на StateFlow для отслеживания прогресса анимации
+        lifecycleScope.launchWhenStarted {
+            viewModel.animationProgress.collect { progress ->
+                binding.progressBar.progress = progress
+            }
+        }
+
         observedForChangeExtInFieldSearch()
+        checkLengthText()
     }
 
     /**
@@ -72,10 +81,16 @@ class MainFragment : Fragment() {
     private fun observedForChangeTextSearch() {
         lifecycleScope.launchWhenStarted {
             viewModel.searchText.collect { searchText ->
-                test = searchText
+                // TODO надо придумать как быть с выводом информации
+                binding.resultTextView.text = searchText
             }
         }
+    }
 
+    /**
+     * Вспомогательный метод для проверки длинны введенного запроса
+     */
+    private fun checkLengthText() {
         lifecycleScope.launchWhenStarted {
             viewModel.searchString2.collect { searchString2 ->
                 updateSearchButtonState(searchString2)
@@ -90,6 +105,36 @@ class MainFragment : Fragment() {
     private fun observedForChangeExtInFieldSearch() {
         binding.textInputEditText.addTextChangedListener { editable ->
             viewModel.updateSearchText(editable.toString())
+        }
+    }
+
+    /**
+     * Слушатель кнопки поиска
+     */
+    private fun listenerButtonsSend() {
+        binding.textInputLayout.setEndIconOnClickListener {
+            animationProgressBar()
+            CoroutineScope(Dispatchers.Main).launch {
+                delay(3000)
+                observedForChangeTextSearch()
+            }
+        }
+    }
+
+    /**
+     * Метод добавляет простую анимацию прогресс бару
+     */
+    private fun animationProgressBar() {
+        job?.cancel()
+        job = CoroutineScope(Dispatchers.Main).launch {
+            for (i in 0..100) {
+
+                // Обновляем прогресс анимации в ViewModel
+                viewModel.updateAnimationProgress(i)
+                delay(30)
+            }
+            // Обнуляем прогресс анимации после завершения
+            viewModel.updateAnimationProgress(0)
         }
     }
 
@@ -109,35 +154,6 @@ class MainFragment : Fragment() {
         binding.textInputLayout.endIconDrawable = searchIcon
 
         listenerButtonsSend()
-    }
-
-    /**
-     * Слушатель кнопки поиска
-     */
-    private var test = ""
-    private fun listenerButtonsSend() {
-        binding.textInputLayout.setEndIconOnClickListener {
-            animationProgressBar()
-            CoroutineScope(Dispatchers.Main).launch {
-                delay(2000)
-                binding.resultTextView.text = test
-                binding.textInputEditText.text?.clear()
-            }
-        }
-    }
-
-    /**
-     * Метод добавляет простую анимацию прогресс бару
-     */
-    private fun animationProgressBar() {
-        job?.cancel()
-        job = CoroutineScope(Dispatchers.Main).launch {
-            for (i in 0..100) {
-                binding.progressBar.progress = i
-                delay(20)
-            }
-            binding.progressBar.progress = 0
-        }
     }
 
     /**
