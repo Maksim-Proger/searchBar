@@ -12,6 +12,7 @@ import android.view.animation.AccelerateDecelerateInterpolator
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.constraintlayout.widget.ConstraintSet
 import androidx.core.content.ContextCompat
+import androidx.core.view.isVisible
 import androidx.core.widget.addTextChangedListener
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.textfield.TextInputLayout
@@ -21,6 +22,7 @@ import kotlinx.coroutines.*
 
 
 class MainFragment : Fragment() {
+
     // region init
     private var _binding : FragmentMainBinding? = null
     private val binding get() = _binding!!
@@ -36,7 +38,7 @@ class MainFragment : Fragment() {
         fun newInstance() = MainFragment()
     }
 
-    private val viewModel: MainViewModel by viewModels { MainViewModelFactory() }
+    private val viewModel: MainViewModel by viewModels()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentMainBinding.inflate(inflater)
@@ -62,7 +64,6 @@ class MainFragment : Fragment() {
         binding.mainConstraintLayout.setOnClickListener {
             onEmptyAreaClicked()
         }
-
         // Подписываемся на StateFlow для отслеживания прогресса анимации
         lifecycleScope.launchWhenStarted {
             viewModel.animationProgress.collect { progress ->
@@ -70,8 +71,10 @@ class MainFragment : Fragment() {
             }
         }
 
-        observedForChangeExtInFieldSearch()
         checkLengthText()
+        observedForChangeTextSearch()
+        subscribeOnChangeState()
+        observedForChangeExtInFieldSearch()
     }
 
     /**
@@ -79,21 +82,38 @@ class MainFragment : Fragment() {
      * Получаем его из ViewModel
      */
     private fun observedForChangeTextSearch() {
-        lifecycleScope.launchWhenStarted {
-            viewModel.searchText.collect { searchText ->
-                // TODO надо придумать как быть с выводом информации
-                binding.resultTextView.text = searchText
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.searchText.collect {
+                binding.resultTextView.text = it
             }
         }
     }
 
     /**
-     * Вспомогательный метод для проверки длинны введенного запроса
+     * Слушатель кнопки поиска
      */
-    private fun checkLengthText() {
-        lifecycleScope.launchWhenStarted {
-            viewModel.searchString2.collect { searchString2 ->
-                updateSearchButtonState(searchString2)
+    private fun listenerButtonsSend() {
+        binding.textInputLayout.setEndIconOnClickListener {
+            viewModel.updateSearchText(binding.textInputEditText.text.toString())
+            animationProgressBar()
+        }
+    }
+
+    /**
+     * Подписка на изменения состояния
+     */
+    private fun subscribeOnChangeState() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.state.collect {
+                when (it) {
+                    State.Loading -> {
+                        binding.progressBar.isVisible = true
+                    }
+
+                    is State.Success -> {
+                        binding.progressBar.isVisible = false
+                    }
+                }
             }
         }
     }
@@ -104,19 +124,17 @@ class MainFragment : Fragment() {
      */
     private fun observedForChangeExtInFieldSearch() {
         binding.textInputEditText.addTextChangedListener { editable ->
-            viewModel.updateSearchText(editable.toString())
+            viewModel.lengthText(editable.toString())
         }
     }
 
     /**
-     * Слушатель кнопки поиска
+     * Вспомогательный метод для проверки длинны введенного запроса
      */
-    private fun listenerButtonsSend() {
-        binding.textInputLayout.setEndIconOnClickListener {
-            animationProgressBar()
-            CoroutineScope(Dispatchers.Main).launch {
-                delay(3000)
-                observedForChangeTextSearch()
+    private fun checkLengthText() {
+        lifecycleScope.launchWhenStarted {
+            viewModel.searchString2.collect { searchString2 ->
+                updateSearchButtonState(searchString2)
             }
         }
     }
@@ -152,7 +170,6 @@ class MainFragment : Fragment() {
             if (isSearchTextValid) TextInputLayout
                 .END_ICON_CUSTOM else TextInputLayout.END_ICON_NONE
         binding.textInputLayout.endIconDrawable = searchIcon
-
         listenerButtonsSend()
     }
 
