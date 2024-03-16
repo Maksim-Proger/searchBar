@@ -19,6 +19,11 @@ class MainViewModel(
     private val _searchString2 = MutableStateFlow("")
     val searchString2 = _searchString2.asStateFlow()
 
+    // Состояние прогресса анимации
+    private val _animationProgress = MutableStateFlow(0)
+    val animationProgress: StateFlow<Int> = _animationProgress
+
+
     fun updateSearchText(text: String) {
 
         _searchString2.value = text
@@ -28,5 +33,12 @@ class MainViewModel(
             _searchText.value = repository.getData(text)
             _state.value = State.Success
         }
+    }
+
+    /**
+     * Функция для обновления прогресса анимации
+     */
+    fun updateAnimationProgress(progress: Int) {
+        _animationProgress.value = progress
     }
 }
