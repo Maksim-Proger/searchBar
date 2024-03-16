@@ -121,7 +121,7 @@ class MainFragment : Fragment() {
             CoroutineScope(Dispatchers.Main).launch {
                 delay(2000)
                 binding.resultTextView.text = test
-//                binding.textInputEditText.text?.clear()
+                binding.textInputEditText.text?.clear()
             }
         }
     }
