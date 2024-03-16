@@ -21,7 +21,7 @@ class MainViewModel(
 
     fun updateSearchText(text: String) {
 
-//        _searchText.value = text
+        _searchString2.value = text
 
         viewModelScope.launch {
             _state.value = State.Loading

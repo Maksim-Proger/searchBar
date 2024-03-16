@@ -66,13 +66,19 @@ class MainFragment : Fragment() {
     }
 
     /**
-     * Наблюдаем за изменениями текста поиска
+     * Наблюдаем за изменениями текста поиска.
+     * Получаем его из ViewModel
      */
     private fun observedForChangeTextSearch() {
         lifecycleScope.launchWhenStarted {
             viewModel.searchText.collect { searchText ->
-                updateSearchButtonState(searchText)
                 test = searchText
+            }
+        }
+
+        lifecycleScope.launchWhenStarted {
+            viewModel.searchString2.collect { searchString2 ->
+                updateSearchButtonState(searchString2)
             }
         }
     }
@@ -115,6 +121,7 @@ class MainFragment : Fragment() {
             CoroutineScope(Dispatchers.Main).launch {
                 delay(2000)
                 binding.resultTextView.text = test
+//                binding.textInputEditText.text?.clear()
             }
         }
     }
